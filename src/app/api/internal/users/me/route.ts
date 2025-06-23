@@ -201,9 +201,12 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const updateData = UpdateUserSchema.parse(body);
 
-    // Regular users can only update their name
+    // Regular users can only update their name and language preference
     // Admins can update role and isActive for other users
-    const allowedUpdates: any = { name: updateData.name };
+    const allowedUpdates: any = {
+      name: updateData.name,
+      language: updateData.language,
+    };
 
     if (hasRole(user.role, "ADMIN")) {
       if (updateData.role) allowedUpdates.role = updateData.role;
@@ -221,6 +224,7 @@ export async function PUT(req: NextRequest) {
         avatar: true,
         role: true,
         domain: true,
+        language: true,
         isActive: true,
         updatedAt: true,
       },
