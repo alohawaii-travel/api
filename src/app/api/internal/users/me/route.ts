@@ -7,6 +7,10 @@ import {
 } from "@/lib/api-helpers";
 import { prisma } from "@/lib/db";
 import { UpdateUserSchema } from "@/types";
+import { createApiAuthMiddleware } from "@/middleware/apiAuth";
+
+// Create middleware for internal routes
+const apiAuthMiddleware = createApiAuthMiddleware('internal');
 
 /**
  * @swagger
@@ -95,6 +99,10 @@ import { UpdateUserSchema } from "@/types";
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 export async function GET(req: NextRequest) {
+  // Check API key authorization for internal routes
+  const authResult = apiAuthMiddleware(req);
+  if (authResult) return authResult;
+
   try {
     const user = await getAuthenticatedUser();
 
@@ -189,6 +197,10 @@ export async function GET(req: NextRequest) {
  */
 // PUT /api/internal/users/me - Update current user profile
 export async function PUT(req: NextRequest) {
+  // Check API key authorization for internal routes
+  const authResult = apiAuthMiddleware(req);
+  if (authResult) return authResult;
+
   try {
     const user = await getAuthenticatedUser();
 

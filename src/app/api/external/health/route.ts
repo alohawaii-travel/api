@@ -1,4 +1,9 @@
 import { successResponse } from '@/lib/api-helpers'
+import { createApiAuthMiddleware } from '@/middleware/apiAuth'
+import { NextRequest } from 'next/server'
+
+// Create middleware for external routes
+const apiAuthMiddleware = createApiAuthMiddleware('external');
 
 /**
  * @swagger
@@ -22,7 +27,11 @@ import { successResponse } from '@/lib/api-helpers'
  *                     data:
  *                       $ref: '#/components/schemas/HealthCheck'
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // Check API key authorization for external routes
+  const authResult = apiAuthMiddleware(req);
+  if (authResult) return authResult;
+
   return Response.json(
     successResponse({
       status: 'healthy',
