@@ -19,14 +19,17 @@ export const PaginationSchema = z.object({
 export const CreateUserSchema = z.object({
   email: z.string().email(),
   name: z.string().optional(),
-  role: z.enum(["CUSTOMER", "ADMIN", "SUPER_ADMIN"]).default("CUSTOMER"),
+  role: z
+    .enum(["PENDING", "READONLY", "USER", "STAFF", "MANAGER", "ADMIN"])
+    .default("PENDING"),
 });
 
 export const UpdateUserSchema = z.object({
   name: z.string().optional(),
-  role: z.enum(["CUSTOMER", "ADMIN", "SUPER_ADMIN"]).optional(),
+  role: z
+    .enum(["PENDING", "READONLY", "USER", "STAFF", "MANAGER", "ADMIN"])
+    .optional(),
   isActive: z.boolean().optional(),
-  language: z.enum(["en", "ko", "ja"]).optional(),
 });
 
 export type ApiResponse<T = any> = z.infer<typeof ApiResponseSchema> & {

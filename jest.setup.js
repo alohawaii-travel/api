@@ -31,9 +31,8 @@ beforeAll(async () => {
   // Set NODE_ENV first
   process.env.NODE_ENV = "test";
 
-  // Use separate test database to avoid contaminating development data
-  process.env.DATABASE_URL =
-    "postgresql://test:test@localhost:5433/alohawaii_test";
+  // Instead of using a test database, we'll mock the Prisma client
+  // This will prevent any real database connections during tests
   process.env.NEXTAUTH_URL = "http://localhost:4000";
   process.env.NEXTAUTH_SECRET = "test-secret-key-for-testing";
 

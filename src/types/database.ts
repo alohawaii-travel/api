@@ -1,6 +1,8 @@
 // Local type definitions to replace Prisma-generated types
 
 export enum UserRole {
+  PENDING = "PENDING",
+  READONLY = "READONLY",
   USER = "USER",
   STAFF = "STAFF",
   MANAGER = "MANAGER",

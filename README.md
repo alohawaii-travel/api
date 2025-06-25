@@ -90,7 +90,7 @@ Create a `.env.local` file in the root directory:
 
 ```env
 # Database
-DATABASE_URL="postgresql://user:password@localhost:5432/alohawaii_dev"
+DATABASE_URL="postgresql://user:password@localhost:5432/alohawaii_db"
 
 # NextAuth.js Configuration
 NEXTAUTH_URL="http://localhost:4000"
@@ -449,6 +449,31 @@ npm run db:migrate
 npx prisma migrate reset
 ```
 
+## 🗄 Database Management
+
+The API uses Prisma with PostgreSQL for database operations. You can manage the database directly from the API code instead of through the infrastructure scripts.
+
+### Common Database Operations
+
+```bash
+# Run migrations
+npm run db:migrate
+
+# Apply schema changes without generating migrations
+npx prisma db push
+
+# Seed the database with test data
+npx prisma db seed
+
+# Reset and recreate the database from scratch
+npx prisma migrate reset
+
+# Open Prisma Studio to view and edit data visually
+npx prisma studio
+```
+
+For more detailed information on database management, see the [Database README](./prisma/README.md).
+
 ## 🔐 Authentication
 
 ### Google OAuth Setup
@@ -652,11 +677,6 @@ npm run db:push         # Apply schema changes
 npm run db:studio       # Open Prisma Studio GUI
 npm run db:migrate      # Create and apply migration
 npm run db:seed         # Seed with sample data
-
-# 🐳 Docker
-docker-compose up -d    # Start all services
-docker-compose down     # Stop all services
-docker-compose logs api # View API logs
 ```
 
 ### Test Database Setup

@@ -78,25 +78,33 @@ export const authOptions: NextAuthOptions = {
 
         // Update or create user with domain info
         try {
-          await prisma.user.upsert({
+          // Check if this is an existing user
+          const existingUser = await prisma.user.findUnique({
             where: { email: googleProfile.email },
-            update: {
-              name: googleProfile.name,
-              avatar: googleProfile.picture,
-              domain: domain,
-              lastLoginAt: new Date(),
-              googleId: googleProfile.id,
-            },
-            create: {
-              email: googleProfile.email,
-              name: googleProfile.name,
-              avatar: googleProfile.picture,
-              domain: domain,
-              googleId: googleProfile.id,
-              role: "STAFF", // Default to STAFF for whitelisted domain users
-              lastLoginAt: new Date(),
-            },
           });
+
+          if (existingUser) {
+            // Update existing user info but don't change role
+            await prisma.user.update({
+              where: { email: googleProfile.email },
+              data: {
+                name: googleProfile.name,
+                image: googleProfile.picture,
+                lastLoginAt: new Date(),
+              },
+            });
+          } else {
+            // Create new user with PENDING role
+            await prisma.user.create({
+              data: {
+                email: googleProfile.email,
+                name: googleProfile.name,
+                image: googleProfile.picture,
+                role: UserRole.PENDING, // Explicitly set to PENDING for new users
+                lastLoginAt: new Date(),
+              },
+            });
+          }
         } catch (error) {
           console.error("Error creating/updating user:", error);
           return false;
@@ -111,12 +119,12 @@ export const authOptions: NextAuthOptions = {
         // Fetch fresh user data from database
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email! },
-          select: { id: true, role: true, domain: true, isActive: true },
+          select: { id: true, role: true, isActive: true },
         });
 
         if (dbUser && dbUser.isActive) {
-          token.role = dbUser.role;
-          token.domain = dbUser.domain;
+          // Convert Prisma UserRole to our custom UserRole enum
+          token.role = dbUser.role as unknown as UserRole;
           token.sub = dbUser.id;
         }
       }
@@ -127,7 +135,7 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.id = token.sub!;
         session.user.role = token.role;
-        session.user.domain = token.domain;
+        // Remove domain as it's not in our schema
       }
       return session;
     },

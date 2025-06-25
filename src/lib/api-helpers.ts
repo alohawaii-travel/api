@@ -25,11 +25,12 @@ export async function getAuthenticatedUser(req?: NextRequest) {
 // Check if user has required role
 export function hasRole(userRole: UserRole, requiredRole: UserRole): boolean {
   const roleHierarchy = {
-    CUSTOMER: 0,
-    STAFF: 1,
-    MANAGER: 2,
-    ADMIN: 3,
-    SUPER_ADMIN: 4,
+    PENDING: 0,
+    READONLY: 1,
+    USER: 2,
+    STAFF: 3,
+    MANAGER: 4,
+    ADMIN: 5,
   };
 
   return roleHierarchy[userRole] >= roleHierarchy[requiredRole];

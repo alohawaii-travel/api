@@ -8,9 +8,10 @@ import {
 import { prisma } from "@/lib/db";
 import { UpdateUserSchema } from "@/types";
 import { createApiAuthMiddleware } from "@/middleware/apiAuth";
+import { UserRole } from "@/types/database";
 
 // Create middleware for internal routes
-const apiAuthMiddleware = createApiAuthMiddleware('internal');
+const apiAuthMiddleware = createApiAuthMiddleware("internal");
 
 /**
  * @swagger
@@ -68,7 +69,7 @@ const apiAuthMiddleware = createApiAuthMiddleware('internal');
  *                 example: "John Doe"
  *               role:
  *                 type: string
- *                 enum: ['CUSTOMER', 'ADMIN', 'SUPER_ADMIN']
+ *                 enum: ['PENDING', 'READONLY', 'USER', 'STAFF', 'MANAGER', 'ADMIN']
  *                 description: User role (admin only)
  *               isActive:
  *                 type: boolean
@@ -162,7 +163,7 @@ export async function GET(req: NextRequest) {
  *                 example: "John Doe"
  *               role:
  *                 type: string
- *                 enum: ['CUSTOMER', 'ADMIN', 'SUPER_ADMIN']
+ *                 enum: ['PENDING', 'READONLY', 'USER', 'STAFF', 'MANAGER', 'ADMIN']
  *                 description: User role (admin only)
  *               isActive:
  *                 type: boolean
@@ -210,14 +211,13 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const updateData = UpdateUserSchema.parse(body);
 
-    // Regular users can only update their name and language preference
+    // Regular users can only update their name
     // Admins can update role and isActive for other users
     const allowedUpdates: any = {
       name: updateData.name,
-      language: updateData.language,
     };
 
-    if (hasRole(user.role, "ADMIN")) {
+    if (hasRole(user.role, UserRole.ADMIN)) {
       if (updateData.role) allowedUpdates.role = updateData.role;
       if (updateData.isActive !== undefined)
         allowedUpdates.isActive = updateData.isActive;
@@ -230,10 +230,8 @@ export async function PUT(req: NextRequest) {
         id: true,
         email: true,
         name: true,
-        avatar: true,
+        image: true,
         role: true,
-        domain: true,
-        language: true,
         isActive: true,
         updatedAt: true,
       },

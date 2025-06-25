@@ -43,7 +43,14 @@ export async function GET(request: NextRequest) {
     // Build where clause
     const where: any = {};
 
-    const validRoles = ["CUSTOMER", "STAFF", "MANAGER", "ADMIN", "SUPER_ADMIN"];
+    const validRoles = [
+      "PENDING",
+      "READONLY",
+      "USER",
+      "STAFF",
+      "MANAGER",
+      "ADMIN",
+    ];
     if (role && validRoles.includes(role)) {
       where.role = role;
     }
@@ -70,11 +77,9 @@ export async function GET(request: NextRequest) {
           id: true,
           email: true,
           name: true,
-          avatar: true,
+          image: true,
           role: true,
-          domain: true,
           isActive: true,
-          language: true,
           createdAt: true,
           updatedAt: true,
           lastLoginAt: true,
