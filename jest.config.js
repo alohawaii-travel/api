@@ -36,6 +36,15 @@ const customJestConfig = {
   // 'jsdom' = Browser-like environment (React components)
   testEnvironment: "node",
 
+  // 🧠 LEARNING: Handle ES modules in Next.js tests
+  // This allows Next.js dynamic imports to work in Jest
+  extensionsToTreatAsEsm: [".ts", ".tsx"],
+  globals: {
+    "ts-jest": {
+      useESM: true,
+    },
+  },
+
   // 🧠 LEARNING: Test discovery optimization
   // Ignore Next.js build files and node_modules for faster test discovery
   testPathIgnorePatterns: ["<rootDir>/.next/", "<rootDir>/node_modules/"],

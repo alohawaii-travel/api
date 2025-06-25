@@ -35,13 +35,18 @@ describe("Health Endpoint Unit Tests", () => {
 
   describe("GET /api/external/health", () => {
     it("should return healthy status with correct structure", async () => {
-      // ARRANGE: Set up test data
+      // ARRANGE: Set up test data with mock API key for external route
       const request = new NextRequest(
-        "http://localhost:4000/api/external/health"
+        "http://localhost:4000/api/external/health",
+        {
+          headers: {
+            "X-API-Key": "test-website-key", // Use test website key for external routes
+          },
+        }
       );
 
       // ACT: Execute the function we're testing
-      const response = await GET();
+      const response = await GET(request);
       const data = await response.json();
 
       // ASSERT: Check the results
@@ -59,8 +64,18 @@ describe("Health Endpoint Unit Tests", () => {
     });
 
     it("should return valid timestamp", async () => {
+      // ARRANGE: Set up test data with mock API key
+      const request = new NextRequest(
+        "http://localhost:4000/api/external/health",
+        {
+          headers: {
+            "X-API-Key": "test-website-key",
+          },
+        }
+      );
+
       // ACT
-      const response = await GET();
+      const response = await GET(request);
       const data = await response.json();
 
       // ASSERT: Verify timestamp is valid
@@ -71,8 +86,18 @@ describe("Health Endpoint Unit Tests", () => {
     });
 
     it("should include all required health check fields", async () => {
+      // ARRANGE: Set up test data with mock API key
+      const request = new NextRequest(
+        "http://localhost:4000/api/external/health",
+        {
+          headers: {
+            "X-API-Key": "test-website-key",
+          },
+        }
+      );
+
       // ACT
-      const response = await GET();
+      const response = await GET(request);
       const data = await response.json();
 
       // ASSERT: Test that all required fields are present
@@ -89,8 +114,18 @@ describe("Health Endpoint Unit Tests", () => {
     });
 
     it("should use test environment in NODE_ENV", async () => {
+      // ARRANGE: Set up test data with mock API key
+      const request = new NextRequest(
+        "http://localhost:4000/api/external/health",
+        {
+          headers: {
+            "X-API-Key": "test-website-key",
+          },
+        }
+      );
+
       // ACT
-      const response = await GET();
+      const response = await GET(request);
       const data = await response.json();
 
       // ASSERT: Verify we're using test environment

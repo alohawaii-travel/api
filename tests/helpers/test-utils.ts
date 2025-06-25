@@ -17,7 +17,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { User, WhitelistedDomain } from "@prisma/client";
+import { User, WhitelistedDomain, UserRole } from "@prisma/client";
 
 /**
  * 🧠 LEARNING: Mock Data Factories
@@ -36,14 +36,15 @@ import { User, WhitelistedDomain } from "@prisma/client";
  */
 
 export const mockUserFactory = (overrides?: Partial<User>): User => ({
-  id: "user-123",
+  id: `user-${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID
   email: "john.doe@testcompany.com",
   name: "John Doe",
   image: "https://example.com/avatar.jpg",
-  role: "CUSTOMER",
-  emailVerified: new Date(),
+  role: UserRole.USER,
+  isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),
+  lastLoginAt: null,
   ...overrides,
 });
 
@@ -52,7 +53,7 @@ export const mockAdminUserFactory = (overrides?: Partial<User>): User =>
     id: "admin-456",
     email: "admin@testcompany.com",
     name: "Admin User",
-    role: "ADMIN",
+    role: UserRole.ADMIN,
     ...overrides,
   });
 
@@ -61,15 +62,16 @@ export const mockSuperAdminUserFactory = (overrides?: Partial<User>): User =>
     id: "superadmin-789",
     email: "superadmin@testcompany.com",
     name: "Super Admin",
-    role: "SUPER_ADMIN",
+    role: UserRole.ADMIN, // Using ADMIN since SUPER_ADMIN doesn't exist in the enum
     ...overrides,
   });
 
 export const mockWhitelistedDomainFactory = (
   overrides?: Partial<WhitelistedDomain>
 ): WhitelistedDomain => ({
-  id: "domain-123",
+  id: `domain-${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID
   domain: "testcompany.com",
+  isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,
@@ -120,8 +122,8 @@ export const createMockPOSTRequest = (
  * - Fast test execution (no OAuth roundtrip)
  */
 
-export const mockSession = (user?: Partial<User>) => ({
-  user: mockUserFactory(user),
+export const mockSession = (user?: Partial<User> | User) => ({
+  user: user || mockUserFactory(),
   expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
 });
 
@@ -144,7 +146,13 @@ export const dbHelpers = {
    */
   async cleanDatabase() {
     const { PrismaClient } = await import("@prisma/client");
-    const prisma = new PrismaClient();
+    const prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: "postgresql://test:test@localhost:5433/alohawaii_test",
+        },
+      },
+    });
 
     try {
       // 🧠 LEARNING: Delete in correct order to avoid foreign key constraints
@@ -162,17 +170,28 @@ export const dbHelpers = {
    */
   async createTestUser(userData?: Partial<User>) {
     const { PrismaClient } = await import("@prisma/client");
-    const prisma = new PrismaClient();
+    const prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: "postgresql://test:test@localhost:5433/alohawaii_test",
+        },
+      },
+    });
 
     try {
       const user = mockUserFactory(userData);
+      const domain = user.email.split("@")[1];
 
-      // Create whitelisted domain first
-      await prisma.whitelistedDomain.create({
-        data: mockWhitelistedDomainFactory({
-          domain: user.email.split("@")[1],
-        }),
+      // Check if domain already exists, if not create it
+      const existingDomain = await prisma.whitelistedDomain.findUnique({
+        where: { domain },
       });
+
+      if (!existingDomain) {
+        await prisma.whitelistedDomain.create({
+          data: mockWhitelistedDomainFactory({ domain }),
+        });
+      }
 
       // Create user
       return await prisma.user.create({
@@ -182,7 +201,7 @@ export const dbHelpers = {
           name: user.name,
           image: user.image,
           role: user.role,
-          emailVerified: user.emailVerified,
+          isActive: user.isActive,
         },
       });
     } finally {
@@ -226,7 +245,7 @@ export const responseHelpers = {
   },
 
   async expectUnauthorizedResponse(response: Response) {
-    return this.expectErrorResponse(response, 401, "Unauthorized");
+    return this.expectErrorResponse(response, 401, "Authentication required");
   },
 
   async expectForbiddenResponse(response: Response) {

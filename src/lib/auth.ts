@@ -1,8 +1,7 @@
 import { NextAuthOptions, DefaultSession } from "next-auth";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "./db";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/types/database";
 import { GoogleProfile } from "@/types";
 
 // Extend NextAuth types
@@ -48,7 +47,7 @@ function extractDomain(email: string): string {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  // Note: Without Prisma adapter, sessions will be JWT-based only
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -94,7 +93,7 @@ export const authOptions: NextAuthOptions = {
               avatar: googleProfile.picture,
               domain: domain,
               googleId: googleProfile.id,
-              role: "CUSTOMER",
+              role: "STAFF", // Default to STAFF for whitelisted domain users
               lastLoginAt: new Date(),
             },
           });

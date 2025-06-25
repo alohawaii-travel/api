@@ -1,8 +1,9 @@
--- Initial database setup
--- This file is automatically executed when the PostgreSQL container starts
+-- Initial SQL for setting up the database
+-- This file can be used to initialize the database schema
 
--- Create extensions if needed
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Create the database (if using manual setup)
+-- CREATE DATABASE alohawaii_dev;
+-- CREATE DATABASE alohawaii_test;
 
--- The actual tables will be created by Prisma migrations
--- This file is just for any initial database setup
+-- Basic initialization (Prisma will handle the rest)
+SELECT 'Database initialization script';

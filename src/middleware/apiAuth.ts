@@ -36,48 +36,61 @@ export function validateApiAccess(
   request: NextRequest,
   routeType: RouteType
 ): { isValid: boolean; error?: string; apiKey?: string } {
-  // Skip validation in development if no API keys are set
-  if (process.env.NODE_ENV === 'development' && !process.env.HUB_API_KEY) {
-    console.log('⚠️ API key validation skipped in development mode');
+  // Skip validation in development/test if no API keys are set
+  if (
+    (process.env.NODE_ENV === "development" ||
+      process.env.NODE_ENV === "test") &&
+    !process.env.HUB_API_KEY
+  ) {
+    console.log("⚠️ API key validation skipped in development/test mode");
     return { isValid: true };
   }
 
   // Get API key from header
-  const apiKey = request.headers.get('X-API-Key') || request.headers.get('x-api-key');
-  
+  const apiKey =
+    request.headers.get("X-API-Key") || request.headers.get("x-api-key");
+
   if (!apiKey) {
-    return { 
-      isValid: false, 
-      error: 'API key required. Please include X-API-Key header.' 
+    return {
+      isValid: false,
+      error: "API key required. Please include X-API-Key header.",
     };
   }
 
+  // Recreate ACCESS_LEVELS with current environment variables to handle test environment
+  const currentAccessLevels: Record<string, RouteType[]> = {
+    [process.env.HUB_API_KEY || ""]: ["internal", "external"],
+    [process.env.WEBSITE_API_KEY || ""]: ["external"],
+    [process.env.DEV_API_KEY || ""]: ["internal", "external"],
+  };
+
   // Check if API key is valid
-  const allowedRoutes = ACCESS_LEVELS[apiKey];
+  const allowedRoutes = currentAccessLevels[apiKey];
   if (!allowedRoutes) {
-    return { 
-      isValid: false, 
-      error: 'Invalid API key provided.' 
+    return {
+      isValid: false,
+      error: "Invalid API key provided.",
     };
   }
 
   // Check if API key has access to this route type
   if (!allowedRoutes.includes(routeType)) {
-    return { 
-      isValid: false, 
-      error: `API key does not have access to ${routeType} routes.` 
+    return {
+      isValid: false,
+      error: `API key does not have access to ${routeType} routes.`,
     };
   }
 
   // Validate origin (optional but recommended)
-  const origin = request.headers.get('origin') || request.headers.get('referer');
+  const origin =
+    request.headers.get("origin") || request.headers.get("referer");
   const allowedOrigins = ALLOWED_ORIGINS[apiKey];
-  
+
   if (origin && allowedOrigins) {
-    const isOriginAllowed = allowedOrigins.some(allowedOrigin => {
-      if (allowedOrigin.includes('*')) {
+    const isOriginAllowed = allowedOrigins.some((allowedOrigin) => {
+      if (allowedOrigin.includes("*")) {
         // Handle wildcard patterns like localhost:*
-        const pattern = allowedOrigin.replace('*', '\\d+');
+        const pattern = allowedOrigin.replace("*", "\\d+");
         return new RegExp(pattern).test(origin);
       }
       return origin.startsWith(allowedOrigin);
@@ -86,10 +99,10 @@ export function validateApiAccess(
     if (!isOriginAllowed) {
       console.warn(`⚠️ Origin ${origin} not allowed for API key`);
       // Don't fail on origin mismatch in development, just warn
-      if (process.env.NODE_ENV === 'production') {
-        return { 
-          isValid: false, 
-          error: 'Origin not allowed for this API key.' 
+      if (process.env.NODE_ENV === "production") {
+        return {
+          isValid: false,
+          error: "Origin not allowed for this API key.",
         };
       }
     }

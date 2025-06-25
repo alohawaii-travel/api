@@ -28,19 +28,26 @@ import { beforeAll, afterAll } from "@jest/globals";
  * - Faster execution with test-optimized settings
  */
 beforeAll(async () => {
+  // Set NODE_ENV first
+  process.env.NODE_ENV = "test";
+
   // Use separate test database to avoid contaminating development data
   process.env.DATABASE_URL =
-    process.env.TEST_DATABASE_URL ||
     "postgresql://test:test@localhost:5433/alohawaii_test";
   process.env.NEXTAUTH_URL = "http://localhost:4000";
   process.env.NEXTAUTH_SECRET = "test-secret-key-for-testing";
-  process.env.NODE_ENV = "test";
 
   // Mock external APIs in test environment
   // 🧠 LEARNING: We don't want real Google OAuth during tests
   process.env.GOOGLE_CLIENT_ID = "mock-google-client-id";
   process.env.GOOGLE_CLIENT_SECRET = "mock-google-client-secret";
-  process.env.API_DOMAIN_WHITELIST = "testcompany.com,example.org";
+  process.env.ALLOWED_DOMAINS = "testcompany.com,example.org";
+
+  // Set up test API keys
+  process.env.HUB_API_KEY = "test-hub-key";
+  process.env.WEBSITE_API_KEY = "test-website-key";
+  process.env.DEV_API_KEY = "test-dev-key";
+  process.env.JWT_SECRET = "test-jwt-secret-change-in-production";
 });
 
 afterAll(async () => {
@@ -64,12 +71,12 @@ afterAll(async () => {
  * - Track how many times they were called
  * - Test different scenarios (success, failure, edge cases)
  */
-jest.mock("next-auth/next", () => ({
+jest.mock("next-auth", () => ({
   getServerSession: jest.fn(),
 }));
 
-jest.mock("next-auth", () => ({
-  default: jest.fn(),
+jest.mock("next-auth/next", () => ({
+  getServerSession: jest.fn(),
 }));
 
 /**
@@ -111,9 +118,9 @@ const mockPrismaClient = {
   $disconnect: jest.fn(),
 };
 
-jest.mock("@prisma/client", () => ({
-  PrismaClient: jest.fn().mockImplementation(() => mockPrismaClient),
-}));
+// Mock @/lib/db only for unit tests
+// Integration and E2E tests should use the real database
+// Individual unit tests can add their own mocks as needed
 
 // Export mock for use in tests
 export { mockPrismaClient };

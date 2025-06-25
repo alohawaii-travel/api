@@ -24,9 +24,7 @@
  */
 
 import request from "supertest";
-import { NextServer } from "next/dist/server/next";
 import { createServer } from "http";
-import next from "next";
 import { dbHelpers, envHelpers } from "../helpers/test-utils";
 
 /**
@@ -39,40 +37,25 @@ import { dbHelpers, envHelpers } from "../helpers/test-utils";
  * 4. Clean environment between tests
  */
 
-let app: NextServer;
 let server: any;
+let baseUrl: string;
 
 describe("Authentication Flow E2E Tests", () => {
   beforeAll(async () => {
-    // 🧠 LEARNING: Start real Next.js server for E2E tests
-    const dev = process.env.NODE_ENV !== "production";
-    app = next({ dev, dir: process.cwd() });
-    const handle = app.getRequestHandler();
+    // 🧠 LEARNING: For E2E tests, we can use a simpler approach
+    // Instead of starting a full Next.js server, we'll use the built-in test server
+    // This avoids the complex ES module issues while still testing real HTTP flows
 
-    await app.prepare();
+    baseUrl = "http://localhost:3000"; // Use the standard Next.js dev server
 
-    server = createServer((req, res) => {
-      return handle(req, res);
-    });
-
-    await new Promise<void>((resolve) => {
-      server.listen(4001, () => {
-        console.log("🧪 E2E test server running on http://localhost:4001");
-        resolve();
-      });
-    });
+    console.log("🧪 E2E tests will use existing dev server or built app");
+    console.log(
+      "💡 Make sure to run 'npm run dev' or 'npm run build && npm start' in another terminal"
+    );
   });
 
   afterAll(async () => {
-    // Cleanup server
-    if (server) {
-      await new Promise<void>((resolve) => {
-        server.close(() => resolve());
-      });
-    }
-    if (app) {
-      await app.close();
-    }
+    // No server cleanup needed since we're using external server
   });
 
   beforeEach(async () => {
@@ -102,7 +85,7 @@ describe("Authentication Flow E2E Tests", () => {
   describe("Public Endpoints", () => {
     it("should respond to health check", async () => {
       // ACT: Make real HTTP request
-      const response = await request("http://localhost:4001")
+      const response = await request(baseUrl)
         .get("/api/external/health")
         .expect(200);
 
@@ -122,9 +105,7 @@ describe("Authentication Flow E2E Tests", () => {
     });
 
     it("should serve API documentation", async () => {
-      const response = await request("http://localhost:4001")
-        .get("/api/docs")
-        .expect(200);
+      const response = await request(baseUrl).get("/api/docs").expect(200);
 
       // Should return OpenAPI spec
       expect(response.body).toHaveProperty("openapi");
@@ -133,7 +114,7 @@ describe("Authentication Flow E2E Tests", () => {
     });
 
     it("should handle 404 for non-existent endpoints", async () => {
-      const response = await request("http://localhost:4001")
+      const response = await request(baseUrl)
         .get("/api/non-existent")
         .expect(404);
     });
@@ -149,7 +130,7 @@ describe("Authentication Flow E2E Tests", () => {
    */
   describe("Protected Endpoints", () => {
     it("should reject unauthenticated requests to protected routes", async () => {
-      const response = await request("http://localhost:4001")
+      const response = await request(baseUrl)
         .get("/api/internal/users/me")
         .expect(401);
 
@@ -174,7 +155,7 @@ describe("Authentication Flow E2E Tests", () => {
       // 3. Verify rejection
 
       // For demo purposes, we'll test the API behavior
-      const response = await request("http://localhost:4001")
+      const response = await request(baseUrl)
         .get("/api/internal/users/me")
         .expect(401); // No valid session
 
@@ -197,7 +178,7 @@ describe("Authentication Flow E2E Tests", () => {
       await dbHelpers.createTestUser({
         email: "workflow@testcompany.com",
         name: "Workflow Test User",
-        role: "CUSTOMER",
+        role: "USER", // Use valid UserRole
       });
 
       // STEP 2: In real E2E, user would log in via OAuth
@@ -207,7 +188,7 @@ describe("Authentication Flow E2E Tests", () => {
       // (This would require session handling in real E2E)
 
       // STEP 4: Verify user data persistence
-      const healthResponse = await request("http://localhost:4001")
+      const healthResponse = await request(baseUrl)
         .get("/api/external/health")
         .expect(200);
 
@@ -218,7 +199,7 @@ describe("Authentication Flow E2E Tests", () => {
       // Create users with different roles
       const customerUser = await dbHelpers.createTestUser({
         email: "customer@test.com",
-        role: "CUSTOMER",
+        role: "USER", // Use valid UserRole
       });
 
       const adminUser = await dbHelpers.createTestUser({
@@ -232,7 +213,7 @@ describe("Authentication Flow E2E Tests", () => {
       // 3. Test permission boundaries
 
       // For now, verify users were created
-      expect(customerUser.role).toBe("CUSTOMER");
+      expect(customerUser.role).toBe("USER");
       expect(adminUser.role).toBe("ADMIN");
     });
   });
@@ -248,7 +229,7 @@ describe("Authentication Flow E2E Tests", () => {
    */
   describe("Error Handling", () => {
     it("should handle malformed requests gracefully", async () => {
-      const response = await request("http://localhost:4001")
+      const response = await request(baseUrl)
         .post("/api/internal/users/me")
         .send("invalid json")
         .set("Content-Type", "application/json")
@@ -263,7 +244,7 @@ describe("Authentication Flow E2E Tests", () => {
       // This would require temporarily breaking database connection
       // For demo purposes, test basic error response format
 
-      const response = await request("http://localhost:4001")
+      const response = await request(baseUrl)
         .get("/api/external/health")
         .expect(200);
 
@@ -273,7 +254,7 @@ describe("Authentication Flow E2E Tests", () => {
 
     it("should validate request headers and methods", async () => {
       // Test wrong HTTP method
-      const response = await request("http://localhost:4001")
+      const response = await request(baseUrl)
         .patch("/api/external/health")
         .expect(405);
 
@@ -294,9 +275,7 @@ describe("Authentication Flow E2E Tests", () => {
     it("should respond quickly to health checks", async () => {
       const startTime = Date.now();
 
-      await request("http://localhost:4001")
-        .get("/api/external/health")
-        .expect(200);
+      await request(baseUrl).get("/api/external/health").expect(200);
 
       const responseTime = Date.now() - startTime;
 
@@ -308,11 +287,7 @@ describe("Authentication Flow E2E Tests", () => {
       // Make 5 concurrent requests
       const requests = Array(5)
         .fill(null)
-        .map(() =>
-          request("http://localhost:4001")
-            .get("/api/external/health")
-            .expect(200)
-        );
+        .map(() => request(baseUrl).get("/api/external/health").expect(200));
 
       const responses = await Promise.all(requests);
 

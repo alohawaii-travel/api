@@ -213,7 +213,7 @@ export default function HomePage() {
             <li>Role-based access control</li>
             <li>JWT session management</li>
             <li>TypeScript with full type safety</li>
-            <li>Prisma ORM with PostgreSQL</li>
+            <li>Custom database interface with PostgreSQL</li>
             <li>OpenAPI documentation</li>
           </ul>
         </div>

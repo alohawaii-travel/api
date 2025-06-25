@@ -112,19 +112,16 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Get full user data from database
+    // Get user data from database, excluding sensitive timestamp fields
     const fullUser = await prisma.user.findUnique({
       where: { id: user.id },
       select: {
         id: true,
         email: true,
         name: true,
-        avatar: true,
+        image: true,
         role: true,
-        domain: true,
         isActive: true,
-        createdAt: true,
-        lastLoginAt: true,
       },
     });
 

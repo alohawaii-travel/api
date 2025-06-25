@@ -1,9 +1,22 @@
+// Database interface - uses real Prisma for integration tests
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+const isTestEnvironment = process.env.NODE_ENV === "test";
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+let prismaInstance: PrismaClient;
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+if (isTestEnvironment) {
+  // For integration tests, always use the test database
+  prismaInstance = new PrismaClient({
+    datasources: {
+      db: {
+        url: "postgresql://test:test@localhost:5433/alohawaii_test",
+      },
+    },
+  });
+} else {
+  // For development and production
+  prismaInstance = new PrismaClient();
+}
+
+export const prisma = prismaInstance;

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
 import { ApiResponse } from "@/types";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/types/database";
 import { prisma } from "./db";
 
 // Get authenticated user from request
@@ -26,8 +26,10 @@ export async function getAuthenticatedUser(req?: NextRequest) {
 export function hasRole(userRole: UserRole, requiredRole: UserRole): boolean {
   const roleHierarchy = {
     CUSTOMER: 0,
-    ADMIN: 1,
-    SUPER_ADMIN: 2,
+    STAFF: 1,
+    MANAGER: 2,
+    ADMIN: 3,
+    SUPER_ADMIN: 4,
   };
 
   return roleHierarchy[userRole] >= roleHierarchy[requiredRole];

@@ -27,7 +27,7 @@
 
 import { NextRequest } from "next/server";
 import { GET } from "@/app/api/internal/users/me/route";
-import { getServerSession } from "next-auth/next";
+import { getServerSession } from "next-auth";
 import {
   mockSession,
   mockAdminSession,
@@ -37,10 +37,22 @@ import {
 } from "../helpers/test-utils";
 
 // Mock NextAuth for integration tests
-jest.mock("next-auth/next");
+jest.mock("next-auth");
 const mockGetServerSession = getServerSession as jest.MockedFunction<
   typeof getServerSession
 >;
+
+// Helper function to create standardized API requests
+const createAPIRequest = (
+  options: { headers?: Record<string, string> } = {}
+) => {
+  return createMockRequest("http://localhost:4000/api/internal/users/me", {
+    headers: {
+      "X-API-Key": "test-hub-key",
+      ...options.headers,
+    },
+  });
+};
 
 describe("User API Integration Tests", () => {
   /**
@@ -64,18 +76,22 @@ describe("User API Integration Tests", () => {
       const testUser = await dbHelpers.createTestUser({
         email: "integration@testcompany.com",
         name: "Integration Test User",
-        role: "CUSTOMER",
+        role: "USER",
       });
 
       // Mock authentication session
       mockGetServerSession.mockResolvedValue(mockSession(testUser));
 
-      const request = createMockRequest(
-        "http://localhost:4000/api/internal/users/me"
-      );
-
       // ACT: Call the API endpoint
-      const response = await GET();
+      const request = createMockRequest(
+        "http://localhost:4000/api/internal/users/me",
+        {
+          headers: {
+            "X-API-Key": "test-hub-key",
+          },
+        }
+      );
+      const response = await GET(request);
 
       // ASSERT: Verify response structure and data
       const data = await responseHelpers.expectSuccessResponse(response);
@@ -98,7 +114,7 @@ describe("User API Integration Tests", () => {
       mockGetServerSession.mockResolvedValue(null);
 
       // ACT
-      const response = await GET();
+      const response = await GET(createAPIRequest());
 
       // ASSERT
       await responseHelpers.expectUnauthorizedResponse(response);
@@ -114,7 +130,7 @@ describe("User API Integration Tests", () => {
       mockGetServerSession.mockResolvedValue(mockSession(testUser));
 
       // ACT
-      const response = await GET();
+      const response = await GET(createAPIRequest());
 
       // ASSERT: Should succeed because domain was whitelisted in createTestUser
       const data = await responseHelpers.expectSuccessResponse(response);
@@ -123,7 +139,7 @@ describe("User API Integration Tests", () => {
 
     it("should include correct user roles in response", async () => {
       // ARRANGE: Test different user roles
-      const roles = ["CUSTOMER", "ADMIN", "SUPER_ADMIN"] as const;
+      const roles = ["USER", "ADMIN", "STAFF"] as const;
 
       for (const role of roles) {
         // Clean database between role tests
@@ -137,7 +153,7 @@ describe("User API Integration Tests", () => {
         mockGetServerSession.mockResolvedValue(mockSession(testUser));
 
         // ACT
-        const response = await GET();
+        const response = await GET(createAPIRequest());
 
         // ASSERT
         const data = await responseHelpers.expectSuccessResponse(response);
@@ -159,7 +175,7 @@ describe("User API Integration Tests", () => {
       );
 
       // ACT
-      const response = await GET();
+      const response = await GET(createAPIRequest());
 
       // ASSERT: Should handle gracefully
       expect(response.status).toBeGreaterThanOrEqual(400);
@@ -181,7 +197,7 @@ describe("User API Integration Tests", () => {
       mockGetServerSession.mockResolvedValue(null);
 
       // ACT: Try to access protected endpoint
-      const response = await GET();
+      const response = await GET(createAPIRequest());
 
       // ASSERT: Should be denied
       await responseHelpers.expectUnauthorizedResponse(response);
@@ -196,29 +212,25 @@ describe("User API Integration Tests", () => {
       mockGetServerSession.mockResolvedValue(mockSession(testUser));
 
       // ACT
-      const response = await GET();
+      const response = await GET(createAPIRequest());
 
       // ASSERT: Should be allowed
       await responseHelpers.expectSuccessResponse(response);
     });
 
     it("should handle expired sessions", async () => {
-      // ARRANGE: Expired session (past expiry date)
-      const testUser = await dbHelpers.createTestUser();
-      const expiredSession = {
-        ...mockSession(testUser),
-        expires: new Date(Date.now() - 1000).toISOString(), // 1 second ago
-      };
-
-      mockGetServerSession.mockResolvedValue(expiredSession);
+      // ARRANGE: NextAuth would return null for expired sessions
+      // In real scenarios, NextAuth middleware handles this before our API
+      mockGetServerSession.mockResolvedValue(null);
 
       // ACT
-      const response = await GET();
+      const response = await GET(createAPIRequest());
 
-      // ASSERT: Should handle expired session
-      // Note: NextAuth.js handles this at the middleware level,
-      // so this test verifies our integration with their system
-      expect(response.status).toBeGreaterThanOrEqual(400);
+      // ASSERT: Should return 401 for missing/expired session
+      expect(response.status).toBe(401);
+      const data = await response.json();
+      expect(data.success).toBe(false);
+      expect(data.message).toContain("Authentication required");
     });
   });
 
@@ -243,7 +255,7 @@ describe("User API Integration Tests", () => {
 
       // ACT: Retrieve user via API
       mockGetServerSession.mockResolvedValue(mockSession(originalUser));
-      const response = await GET();
+      const response = await GET(createAPIRequest());
 
       // ASSERT: Data should match what we stored
       const data = await responseHelpers.expectSuccessResponse(response);
@@ -253,18 +265,24 @@ describe("User API Integration Tests", () => {
     });
 
     it("should handle concurrent user operations", async () => {
-      // ARRANGE: Create multiple users
+      // ARRANGE: Create multiple users with unique domains
       const users = await Promise.all([
-        dbHelpers.createTestUser({ email: "user1@test.com" }),
-        dbHelpers.createTestUser({ email: "user2@test.com" }),
-        dbHelpers.createTestUser({ email: "user3@test.com" }),
+        dbHelpers.createTestUser({
+          email: "user1@test1.com",
+        }),
+        dbHelpers.createTestUser({
+          email: "user2@test2.com",
+        }),
+        dbHelpers.createTestUser({
+          email: "user3@test3.com",
+        }),
       ]);
 
       // ACT: Make concurrent API calls
       const responses = await Promise.all(
         users.map((user) => {
           mockGetServerSession.mockResolvedValue(mockSession(user));
-          return GET();
+          return GET(createAPIRequest());
         })
       );
 

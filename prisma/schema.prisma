@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,46 +10,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ===== AUTHENTICATION & USERS =====
-
 model User {
-  id       String   @id @default(cuid())
-  email    String   @unique
-  name     String?
-  avatar   String?
-  role     UserRole @default(CUSTOMER)
-  isActive Boolean  @default(true)
-
-  // Google OAuth fields
-  googleId String? @unique
-  domain   String? // For domain whitelisting
-
-  // User preferences
-  language String? @default("en") // Language preference
-
-  // Audit fields
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  image       String?
+  role        UserRole @default(USER)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   lastLoginAt DateTime?
 
-  // NextAuth.js relations
+  // NextAuth.js fields
   accounts Account[]
   sessions Session[]
 
   @@map("users")
 }
 
-model WhitelistedDomain {
-  id        String   @id @default(cuid())
-  domain    String   @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("whitelisted_domains")
-}
-
-// NextAuth.js required tables
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -83,13 +64,22 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
-  @@map("verification_tokens")
+  @@map("verificationtokens")
 }
 
-// ===== ENUMS =====
+model WhitelistedDomain {
+  id        String   @id @default(cuid())
+  domain    String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("whitelisted_domains")
+}
 
 enum UserRole {
-  CUSTOMER
+  USER
+  STAFF
+  MANAGER
   ADMIN
-  SUPER_ADMIN
 }
