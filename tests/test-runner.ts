@@ -54,7 +54,7 @@ class TestRunner {
     console.log("🔧 Setting up test environment...");
 
     // Set test environment variables
-    process.env.NODE_ENV = "test";
+    (process.env as any).NODE_ENV = "test";
     process.env.NEXTAUTH_URL = "http://localhost:4001";
     process.env.NEXTAUTH_SECRET = "test-secret-key-for-testing";
     process.env.GOOGLE_CLIENT_ID = "mock-google-client-id";
@@ -425,7 +425,8 @@ if (require.main === module) {
   runner.run();
 }
 
-export { TestRunner, TestConfig };
+export { TestRunner };
+export type { TestConfig };
 
 /**
  * 🧠 LEARNING: Benefits of Modern Test Setup

@@ -1,0 +1,79 @@
+// Import custom Sass utilities
+@import "./sass-utils";
+
+// Base styles using Sass utilities
+body {
+  @include reset-margin;
+  @include font-stack;
+
+  background-color: color(background);
+  color: color(text);
+  line-height: 1.6;
+}
+
+// Swagger UI customizations using Sass
+.swagger-ui {
+  .topbar {
+    display: none; // Hide Swagger UI top bar
+  }
+
+  .info {
+    @include api-section;
+
+    .title {
+      color: color(primary);
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .description {
+      color: color(text-muted);
+    }
+  }
+
+  .opblock {
+    @include api-section;
+    border-left: 4px solid color(secondary);
+
+    &.opblock-get {
+      border-left-color: color(success);
+    }
+
+    &.opblock-post {
+      border-left-color: color(warning);
+    }
+
+    &.opblock-delete {
+      border-left-color: color(error);
+    }
+  }
+}
+
+// Utility classes using Sass functions and mixins
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.status-badge {
+  &--success {
+    @include status-badge("success");
+  }
+
+  &--error {
+    @include status-badge("error");
+  }
+
+  &--warning {
+    @include status-badge("warning");
+  }
+
+  &--info {
+    @include status-badge("info");
+  }
+}

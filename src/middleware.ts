@@ -11,29 +11,39 @@ export async function middleware(req: NextRequest) {
   }
 
   // Check API key for all API routes (external and internal)
-  if (pathname.startsWith("/api/external") || pathname.startsWith("/api/internal")) {
-    const routeType = pathname.startsWith("/api/internal") ? "internal" : "external";
+  if (
+    pathname.startsWith("/api/external") ||
+    pathname.startsWith("/api/internal")
+  ) {
+    const routeType = pathname.startsWith("/api/internal")
+      ? "internal"
+      : "external";
     const apiValidation = validateApiAccess(req, routeType);
-    
+
     if (!apiValidation.isValid) {
-      console.error(`🚫 API key validation failed for ${pathname}: ${apiValidation.error}`);
+      console.error(
+        `🚫 API key validation failed for ${pathname}: ${apiValidation.error}`
+      );
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: apiValidation.error,
-          code: 'UNAUTHORIZED'
+          code: "UNAUTHORIZED",
         },
         { status: 401 }
       );
     }
-    
+
     console.log(`✅ API key validation passed for ${pathname}`);
   }
 
-  // Additional auth check for internal routes
-  if (pathname.startsWith("/api/internal")) {
+  // Additional auth check for internal routes (except the auth endpoint itself)
+  if (
+    pathname.startsWith("/api/internal") &&
+    pathname !== "/api/internal/users/auth"
+  ) {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    
+
     if (!token) {
       return NextResponse.json(
         { success: false, message: "Authentication required" },

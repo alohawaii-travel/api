@@ -1,29 +1,11 @@
-// Database interface - uses mocks for tests
+// Database interface
 import { PrismaClient } from "@prisma/client";
 
-const isTestEnvironment = process.env.NODE_ENV === "test";
+// Create a singleton Prisma client instance
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
-let prismaInstance: PrismaClient;
+export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 
-if (isTestEnvironment) {
-  // For tests, use a mocked client
-  // This prevents any real database operations during tests
-  const mockExtended = require("jest-mock-extended");
-
-  // Create a mock instance of PrismaClient
-  const prismaMock = mockExtended.mockDeep();
-
-  // If using singleton pattern, reset between tests
-  if (typeof beforeEach === "function") {
-    beforeEach(() => {
-      mockExtended.mockReset(prismaMock);
-    });
-  }
-
-  prismaInstance = prismaMock as unknown as PrismaClient;
-} else {
-  // For development and production
-  prismaInstance = new PrismaClient();
-}
-
-export const prisma = prismaInstance;
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
